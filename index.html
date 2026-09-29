@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1D6B43">
+<title>כוכב המחזור</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⭐</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Secular+One&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --chalk:#F5F7F1; --paper:#FFFFFF; --ink:#16233A; --muted:#5E6875;
+    --pitch:#1D6B43; --pitch-deep:#134B2F; --pitch-soft:#E2EFE5;
+    --gold:#F0B429; --gold-soft:#FFF4D6; --line:#D9DED4; --danger:#B3261E;
+    --display:"Secular One","Arial Hebrew",Arial,sans-serif;
+    --body:"Assistant","Segoe UI",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--chalk);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5;
+       padding-bottom:env(safe-area-inset-bottom,0px);-webkit-tap-highlight-color:transparent}
+  button,input{font:inherit;color:inherit}
+  button{cursor:pointer}
+  :focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+  header.band{background:var(--pitch);color:#fff;padding:calc(env(safe-area-inset-top,0px) + 22px) 20px 26px;position:relative;overflow:hidden}
+  header.band::after{content:"";position:absolute;inset-inline-start:-60px;bottom:-110px;width:220px;height:220px;border:3px solid rgba(255,255,255,.18);border-radius:50%}
+  header.band small{display:block;opacity:.8;font-size:15px}
+  header.band h1{font-family:var(--display);font-weight:400;font-size:clamp(30px,8vw,42px);line-height:1.1;margin:4px 0 0}
+  main{max-width:560px;margin:0 auto;padding:20px 16px 120px}
+
+  h2{font-family:var(--display);font-weight:400;font-size:22px;margin:26px 0 10px}
+  h2:first-child{margin-top:4px}
+  p.note{color:var(--muted);margin:4px 0 14px;font-size:15px}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:1.5px solid var(--line);background:var(--paper);border-radius:999px;padding:8px 16px;font-weight:600;min-height:44px}
+  .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+
+  .cands{display:grid;gap:8px}
+  .cand{display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:start;background:var(--paper);
+        border:1.5px solid var(--line);border-radius:14px;padding:14px 16px;font-size:19px;font-weight:700;min-height:56px;
+        transition:background .15s,border-color .15s,transform .15s}
+  .cand .star{font-size:24px;filter:grayscale(1);opacity:.25;transition:all .2s}
+  .cand[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold);transform:scale(1.01)}
+  .cand[aria-pressed="true"] .star{filter:none;opacity:1;transform:scale(1.2)}
+
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:14px;padding:15px 18px;
+       font-weight:700;font-size:18px;background:var(--pitch);color:#fff;min-height:54px;text-decoration:none}
+  .btn:disabled{opacity:.4;cursor:default}
+  .btn.wa{background:#25D366;color:#0B3D1E}
+  .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+  .btn.danger{background:transparent;color:var(--danger);border:1.5px solid #E7B9B5}
+  .stack{display:grid;gap:10px}
+  .dock{position:fixed;inset-inline:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));
+        background:linear-gradient(to top,var(--chalk) 70%,rgba(245,247,241,0))}
+  .dock .btn{max-width:528px;margin:0 auto}
+
+  input[type=text],input[type=password]{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--paper);min-height:50px}
+  .row{display:flex;gap:8px}
+  .row .btn{width:auto;flex:0 0 auto;padding-inline:20px}
+
+  .roster{display:grid;gap:6px}
+  .rp{display:flex;align-items:center;gap:10px;background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:6px 6px 6px 12px}
+  .rp label{flex:1;display:flex;align-items:center;gap:12px;padding:8px 4px;font-weight:600;cursor:pointer;min-height:40px}
+  .rp input{width:22px;height:22px;accent-color:var(--pitch)}
+  .rp .x{border:0;background:none;color:var(--muted);font-size:20px;width:40px;height:40px;border-radius:10px}
+  .count{font-weight:700;color:var(--pitch)}
+
+  .card{background:var(--paper);border:1.5px solid var(--line);border-radius:16px;padding:16px}
+  .link{direction:ltr;text-align:left;font-size:14px;color:var(--muted);word-break:break-all;margin:6px 0 14px}
+
+  .bars{display:grid;gap:12px}
+  .bar .top{display:flex;justify-content:space-between;font-weight:700}
+  .bar .track{height:12px;background:var(--pitch-soft);border-radius:6px;overflow:hidden;margin-top:4px}
+  .bar .fill{height:100%;background:var(--pitch);border-radius:6px;transition:width .5s}
+  .bar.lead .fill{background:var(--gold)}
+
+  .winner{text-align:center;padding:26px 16px;background:var(--gold-soft);border:2px solid var(--gold);border-radius:20px}
+  .winner .big{font-size:56px;line-height:1}
+  .winner .name{font-family:var(--display);font-size:clamp(30px,9vw,44px);margin:8px 0 2px}
+
+  .games{display:grid;gap:8px}
+  .game{display:flex;justify-content:space-between;align-items:center;text-align:start;width:100%;background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:14px 16px}
+  .game b{display:block;font-size:18px}
+  .game span{color:var(--muted);font-size:14px}
+  .tag{font-size:13px;font-weight:700;border-radius:999px;padding:3px 10px;background:var(--pitch-soft);color:var(--pitch-deep);white-space:nowrap}
+  .tag.off{background:#EEE;color:var(--muted)}
+
+  .msg{padding:14px 16px;border-radius:12px;background:#FDECEA;color:var(--danger);font-weight:600}
+  .ok{padding:14px 16px;border-radius:12px;background:var(--pitch-soft);color:var(--pitch-deep);font-weight:600}
+  .back{background:none;border:0;color:#fff;opacity:.85;padding:0;font-size:15px;margin-bottom:6px}
+  .toast{position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);inset-inline:16px;max-width:520px;margin:0 auto;background:var(--ink);color:#fff;
+         padding:12px 16px;border-radius:12px;font-weight:600;text-align:center;z-index:9}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const app = document.getElementById("app");
+const params = new URLSearchParams(location.search);
+let timer = null;
+
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  del(k) { try { localStorage.removeItem(k); } catch {} },
+};
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+async function api(path, { method = "GET", body, admin = false } = {}) {
+  const headers = {};
+  if (body) headers["content-type"] = "application/json";
+  if (admin) headers["x-admin-key"] = LS.get("mvp:key", "");
+  let res;
+  try { res = await fetch("/api/" + path, { method, headers, body: body ? JSON.stringify(body) : undefined }); }
+  catch { throw new Error("אין חיבור לאינטרנט. נסו שוב."); }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { const e = new Error(data.error || "משהו השתבש. נסו שוב."); e.status = res.status; throw e; }
+  return data;
+}
+
+function toast(text) {
+  const t = document.createElement("div");
+  t.className = "toast"; t.textContent = text; t.setAttribute("role", "status");
+  document.body.appendChild(t); setTimeout(() => t.remove(), 2200);
+}
+function page(small, title, body, { back } = {}) {
+  clearInterval(timer);
+  app.innerHTML = `<header class="band">${back ? `<button class="back" data-back>‹ חזרה</button>` : ""}
+    <small>${esc(small)}</small><h1>${esc(title)}</h1></header><main>${body}</main>`;
+  if (back) app.querySelector("[data-back]").onclick = back;
+  window.scrollTo(0, 0);
+}
+const voteLink = (id) => `${location.origin}/?g=${id}`;
+const waHref = (text) => `https://wa.me/?text=${encodeURIComponent(text)}`;
+const inviteText = (g) => `⭐ מי היה כוכב המחזור? (${g.title})\nבחרו מי היה איש המשחק:\n${voteLink(g.id)}`;
+
+function barsHTML(results) {
+  const max = Math.max(1, ...results.map((r) => r.votes));
+  const top = results[0]?.votes || 0;
+  return `<div class="bars">${results.map((r) => `
+    <div class="bar ${r.votes && r.votes === top ? "lead" : ""}">
+      <div class="top"><span>${r.votes && r.votes === top ? "⭐ " : ""}${esc(r.name)}</span><span>${r.votes}</span></div>
+      <div class="track"><div class="fill" style="width:${(r.votes / max) * 100}%"></div></div>
+    </div>`).join("")}</div>`;
+}
+function winnersHTML(results) {
+  const top = results[0]?.votes || 0;
+  if (!top) return `<div class="card">אף אחד לא הצביע.</div>`;
+  const names = results.filter((r) => r.votes === top).map((r) => esc(r.name));
+  return `<div class="winner"><div class="big">⭐</div>
+    <div class="name">${names.join(" ו")}</div><div>${names.length > 1 ? "תיקו, " : ""}${top} קולות</div></div>`;
+}
+
+/* ================= מצביע ================= */
+async function voterView(id) {
+  page("", "רגע…", "");
+  let game;
+  try { game = await api("games/" + id); }
+  catch (e) { return page("כוכב המחזור", "אופס", `<div class="msg">${esc(e.message)}</div>`); }
+
+  if (game.closed) {
+    return page(game.title, "כוכב המחזור", `${winnersHTML(game.results)}<h2>כל התוצאות</h2>${barsHTML(game.results)}`);
+  }
+
+  const key = "mvp:vote:" + id;
+  const saved = LS.get(key, null);
+  if (saved) {
+    page(game.title, "הצבעת!", `
+      <div class="ok">בחרת ב־${esc(saved.candidate)} ככוכב המחזור.</div>
+      <p class="note">אפשר לשנות את הבחירה עד שההצבעה תיסגר. התוצאות יופיעו בקישור הזה אחרי הסגירה.</p>
+      <button class="btn ghost" id="change">שינוי הצבעה</button>`);
+    document.getElementById("change").onclick = () => { LS.del(key); voterPick(game, saved.voter); };
+    return;
+  }
+  voterPick(game, LS.get("mvp:me:" + id, null));
+}
+
+function voterPick(game, voter) {
+  let candidate = null;
+  const draw = () => {
+    page(game.title, "מי היה כוכב המחזור?", `
+      <h2>מי אתה?</h2>
+      <div class="chips">${game.players.map((p) =>
+        `<button class="chip" data-voter="${esc(p)}" aria-pressed="${p === voter}">${esc(p)}</button>`).join("")}</div>
+      ${voter ? `
+        <h2>הכוכב שלך</h2>
+        <div class="cands">${game.players.filter((p) => p !== voter).map((p) =>
+          `<button class="cand" data-cand="${esc(p)}" aria-pressed="${p === candidate}"><span>${esc(p)}</span><span class="star">⭐</span></button>`).join("")}</div>`
+      : `<p class="note">בחר את השם שלך כדי להמשיך. לא מצביעים לעצמך.</p>`}
+      <div id="err"></div>
+      <div class="dock"><button class="btn" id="send" ${candidate ? "" : "disabled"}>${candidate ? `הצבעה ל־${esc(candidate)}` : "בחרו שחקן"}</button></div>`);
+
+    app.querySelectorAll("[data-voter]").forEach((b) => b.onclick = () => {
+      voter = b.dataset.voter; candidate = null; LS.set("mvp:me:" + game.id, voter); draw();
+    });
+    app.querySelectorAll("[data-cand]").forEach((b) => b.onclick = () => {
+      candidate = b.dataset.cand;
+      app.querySelectorAll("[data-cand]").forEach((x) => x.setAttribute("aria-pressed", x === b));
+      const s = document.getElementById("send"); s.disabled = false; s.textContent = `הצבעה ל־${candidate}`;
+    });
+    document.getElementById("send").onclick = async (ev) => {
+      ev.target.disabled = true;
+      try {
+        await api(`games/${game.id}/vote`, { method: "POST", body: { voter, candidate } });
+        LS.set("mvp:vote:" + game.id, { voter, candidate });
+        voterView(game.id);
+      } catch (e) {
+        document.getElementById("err").innerHTML = `<div class="msg" style="margin-top:14px">${esc(e.message)}</div>`;
+        ev.target.disabled = false;
+      }
+    };
+  };
+  draw();
+}
+
+/* ================= מנהל ================= */
+function loginView(error) {
+  page("כוכב המחזור", "כניסת מנהל", `
+    <p class="note">הקוד הוא ה־ADMIN_KEY שהגדרת ב־Netlify. צריך להקליד אותו פעם אחת בכל מכשיר.</p>
+    <div class="stack">
+      <input type="password" id="key" placeholder="קוד מנהל" autocomplete="current-password">
+      ${error ? `<div class="msg">${esc(error)}</div>` : ""}
+      <button class="btn" id="go">כניסה</button>
+    </div>`);
+  const go = async () => {
+    LS.set("mvp:key", document.getElementById("key").value.trim());
+    try { await api("check", { admin: true }); homeView(); }
+    catch (e) { LS.del("mvp:key"); loginView(e.status === 401 ? "הקוד שגוי" : e.message); }
+  };
+  document.getElementById("go").onclick = go;
+  document.getElementById("key").onkeydown = (e) => { if (e.key === "Enter") go(); };
+}
+
+async function homeView() {
+  if (!LS.get("mvp:key", "")) return loginView();
+  const roster = LS.get("mvp:roster", []);
+  const picked = new Set(LS.get("mvp:last", []).filter((p) => roster.includes(p)));
+  const d = new Date();
+  const defTitle = `משחק ${d.getDate()}.${d.getMonth() + 1}`;
+
+  const draw = (games) => {
+    page("ניהול", "כוכב המחזור", `
+      <h2>משחק חדש</h2>
+      <div class="stack">
+        <input type="text" id="title" value="${esc(defTitle)}" maxlength="60" aria-label="שם המשחק">
+      </div>
+      <h2>מי שיחק היום? <span class="count" id="cnt">${picked.size}</span></h2>
+      <p class="note">הרשימה נשמרת בטלפון שלך. מסמנים רק את מי שהשתתף.</p>
+      <div class="roster" id="roster">${roster.map((p) => `
+        <div class="rp"><label><input type="checkbox" value="${esc(p)}" ${picked.has(p) ? "checked" : ""}>${esc(p)}</label>
+        <button class="x" data-del="${esc(p)}" aria-label="הסרת ${esc(p)} מהרשימה">✕</button></div>`).join("")
+        || `<p class="note">עוד אין שחקנים. הוסיפו את חברי הקבוצה פעם אחת והם יישמרו.</p>`}</div>
+      <div class="row" style="margin-top:10px">
+        <input type="text" id="newp" placeholder="שם שחקן" maxlength="40" enterkeyhint="done">
+        <button class="btn ghost" id="add">הוספה</button>
+      </div>
+      <div id="err"></div>
+      <div style="margin-top:18px"><button class="btn" id="create">יצירת הצבעה</button></div>
+
+      <h2>הצבעות קודמות</h2>
+      <div class="games">${games == null ? `<p class="note">טוען…</p>` : games.length ? games.map((g) => `
+        <button class="game" data-open="${g.id}"><div><b>${esc(g.title)}</b><span>${g.count} שחקנים</span></div>
+        <span class="tag ${g.closed ? "off" : ""}">${g.closed ? "נסגרה" : "פתוחה"}</span></button>`).join("")
+        : `<p class="note">עוד לא נוצרו הצבעות.</p>`}</div>
+      <p style="margin-top:30px"><button class="btn ghost" id="logout">יציאה מהמכשיר</button></p>`);
+
+    app.querySelectorAll("#roster input").forEach((c) => c.onchange = () => {
+      c.checked ? picked.add(c.value) : picked.delete(c.value);
+      document.getElementById("cnt").textContent = picked.size;
+    });
+    app.querySelectorAll("[data-del]").forEach((b) => b.onclick = () => {
+      const n = b.dataset.del;
+      if (!confirm(`להסיר את ${n} מרשימת הקבוצה?`)) return;
+      roster.splice(roster.indexOf(n), 1); picked.delete(n); LS.set("mvp:roster", roster); draw(games);
+    });
+    const add = () => {
+      const inp = document.getElementById("newp");
+      const n = inp.value.replace(/\s+/g, " ").trim();
+      if (!n) return;
+      if (!roster.includes(n)) roster.push(n);
+      picked.add(n); LS.set("mvp:roster", roster); draw(games);
+      document.getElementById("newp").focus();
+    };
+    document.getElementById("add").onclick = add;
+    document.getElementById("newp").onkeydown = (e) => { if (e.key === "Enter") add(); };
+    document.getElementById("create").onclick = async (ev) => {
+      const players = roster.filter((p) => picked.has(p));
+      const err = document.getElementById("err");
+      if (players.length < 2) { err.innerHTML = `<div class="msg" style="margin-top:12px">סמנו לפחות שני שחקנים שהשתתפו.</div>`; return; }
+      ev.target.disabled = true;
+      try {
+        const g = await api("games", { method: "POST", admin: true, body: { title: document.getElementById("title").value, players } });
+        LS.set("mvp:last", players);
+        manageView(g.id, true);
+      } catch (e) {
+        if (e.status === 401) return loginView("הקוד כבר לא תקף. הקלידו אותו שוב.");
+        err.innerHTML = `<div class="msg" style="margin-top:12px">${esc(e.message)}</div>`; ev.target.disabled = false;
+      }
+    };
+    app.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => manageView(b.dataset.open));
+    document.getElementById("logout").onclick = () => { LS.del("mvp:key"); loginView(); };
+  };
+
+  draw(null);
+  try { draw((await api("games", { admin: true })).games); }
+  catch (e) { if (e.status === 401) loginView("הקוד שגוי"); }
+}
+
+async function manageView(id, fresh) {
+  let g;
+  try { g = await api(`games/${id}/results`, { admin: true }); }
+  catch (e) { if (e.status === 401) return loginView(); return page("ניהול", "אופס", `<div class="msg">${esc(e.message)}</div>`, { back: homeView }); }
+
+  const missing = g.players.filter((p) => !g.voted.includes(p));
+  const reminder = `⏰ עוד לא הצבעתם לכוכב המחזור (${g.title}):\n${missing.join(", ")}\n${voteLink(g.id)}`;
+
+  page(g.closed ? "ההצבעה נסגרה" : "ההצבעה פתוחה", g.title, `
+    ${fresh ? `<div class="ok" style="margin-bottom:14px">ההצבעה נוצרה. עכשיו שולחים לקבוצה.</div>` : ""}
+    ${!g.closed ? `
+      <div class="card">
+        <b>קישור להצבעה</b>
+        <div class="link">${esc(voteLink(g.id))}</div>
+        <div class="stack">
+          <a class="btn wa" href="${waHref(inviteText(g))}" target="_blank" rel="noopener">שליחה בוואטסאפ</a>
+          <button class="btn ghost" id="copy">העתקת הקישור</button>
+        </div>
+      </div>` : winnersHTML(g.results)}
+
+    <h2>תוצאות <span class="count">${g.total} מתוך ${g.players.length} הצביעו</span></h2>
+    ${barsHTML(g.results)}
+
+    ${missing.length && !g.closed ? `
+      <h2>עוד לא הצביעו</h2>
+      <div class="chips">${missing.map((p) => `<span class="chip">${esc(p)}</span>`).join("")}</div>
+      <div style="margin-top:12px"><a class="btn ghost" href="${waHref(reminder)}" target="_blank" rel="noopener">שליחת תזכורת בוואטסאפ</a></div>` : ""}
+
+    <h2>ניהול</h2>
+    <div class="stack">
+      <button class="btn ${g.closed ? "ghost" : ""}" id="toggle">${g.closed ? "פתיחה מחדש של ההצבעה" : "סגירת ההצבעה והצגת הזוכה"}</button>
+      ${g.closed ? `<a class="btn wa" href="${waHref(`⭐ כוכב המחזור (${g.title}): ${g.results.filter((r) => r.votes && r.votes === g.results[0].votes).map((r) => r.name).join(" ו") || "אין קולות"}!\nכל התוצאות: ${voteLink(g.id)}`)}" target="_blank" rel="noopener">שליחת הזוכה לקבוצה</a>` : ""}
+      <button class="btn danger" id="del">מחיקת ההצבעה</button>
+    </div>`, { back: homeView });
+
+  document.getElementById("copy")?.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(voteLink(g.id)); toast("הקישור הועתק"); } catch { toast("לא הצלחתי להעתיק. סמנו את הקישור ידנית."); }
+  });
+  document.getElementById("toggle").onclick = async (ev) => {
+    if (!g.closed && !confirm("לסגור את ההצבעה? מי שלא הצביע לא יוכל להצביע, והזוכה יוצג לכולם.")) return;
+    ev.target.disabled = true;
+    try { await api(`games/${id}/status`, { method: "POST", admin: true, body: { closed: !g.closed } }); manageView(id); }
+    catch (e) { toast(e.message); ev.target.disabled = false; }
+  };
+  document.getElementById("del").onclick = async () => {
+    if (!confirm("למחוק את ההצבעה ואת כל הקולות? אי אפשר לבטל.")) return;
+    try { await api("games/" + id, { method: "DELETE", admin: true }); toast("ההצבעה נמחקה"); homeView(); }
+    catch (e) { toast(e.message); }
+  };
+  if (!g.closed) timer = setInterval(async () => {
+    try { const n = await api(`games/${id}/results`, { admin: true }); if (n.total !== g.total) manageView(id); } catch {}
+  }, 10000);
+}
+
+/* ================= ניתוב ================= */
+const gid = params.get("g");
+if (gid) voterView(gid); else homeView();
+</script>
+</body>
+</html>
