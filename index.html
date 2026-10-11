@@ -43,9 +43,9 @@
   .cand{display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:start;background:var(--paper);
         border:1.5px solid var(--line);border-radius:14px;padding:14px 16px;font-size:19px;font-weight:700;min-height:56px;
         transition:background .15s,border-color .15s,transform .15s}
-  .cand .star{font-size:24px;filter:grayscale(1);opacity:.25;transition:all .2s}
+  .cand .star,.cand .ico{font-size:24px;filter:grayscale(1);opacity:.25;transition:all .2s}
   .cand[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold);transform:scale(1.01)}
-  .cand[aria-pressed="true"] .star{filter:none;opacity:1;transform:scale(1.2)}
+  .cand[aria-pressed="true"] .star,.cand[aria-pressed="true"] .ico{filter:none;opacity:1;transform:scale(1.2)}
 
   .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:14px;padding:15px 18px;
        font-weight:700;font-size:18px;background:var(--pitch);color:#fff;min-height:54px;text-decoration:none}
@@ -94,6 +94,23 @@
   .back{background:none;border:0;color:#fff;opacity:.85;padding:0;font-size:15px;margin-bottom:6px}
   .toast{position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);inset-inline:16px;max-width:520px;margin:0 auto;background:var(--ink);color:#fff;
          padding:12px 16px;border-radius:12px;font-weight:600;text-align:center;z-index:9}
+  .progress{display:flex;gap:6px;margin:0 0 14px}
+  .progress i{flex:1;height:6px;border-radius:3px;background:var(--line)}
+  .progress i.on{background:var(--pitch)}
+  .lead{font-size:19px;font-weight:600;margin:0 0 16px}
+  .who{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--pitch-soft);color:var(--pitch-deep);
+       border-radius:12px;padding:10px 14px;margin-bottom:16px;font-weight:600}
+  .who button{background:none;border:0;color:var(--pitch-deep);text-decoration:underline;padding:4px}
+  .chips.big .chip{font-size:19px;padding:12px 20px;min-height:52px}
+  .warn{padding:14px 16px;border-radius:12px;background:var(--gold-soft);border:2px solid var(--gold);font-weight:700;margin-bottom:14px}
+  .sum{display:grid;gap:10px;margin-bottom:22px}
+  .sum .line{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .sum small{display:block;color:var(--muted);font-size:14px}
+  .sum b{font-size:20px}
+  .sum button{background:none;border:0;color:var(--pitch);text-decoration:underline;font-weight:600}
+  .btn.send{font-size:21px;min-height:62px}
+  .cat{margin-top:22px}
+  .cat:first-child{margin-top:0}
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -137,23 +154,35 @@ function page(small, title, body, { back } = {}) {
 }
 const voteLink = (id) => `${location.origin}/?g=${id}`;
 const waHref = (text) => `https://wa.me/?text=${encodeURIComponent(text)}`;
-const inviteText = (g) => `⭐ מי היה כוכב המחזור? (${g.title})\nבחרו מי היה איש המשחק:\n${voteLink(g.id)}`;
+const inviteText = (g) => `⭐ הצבעה: כוכב המחזור והפתעת המחזור (${g.title})\nלוחצים על הקישור, בוחרים את השם שלכם ואז מצביעים.\nבסוף חובה ללחוץ "שליחת ההצבעה"!\n${voteLink(g.id)}`;
 
-function barsHTML(results) {
+const CATS = [
+  { key: "star", icon: "⭐", label: "כוכב המחזור" },
+  { key: "surprise", icon: "✨", label: "הפתעת המחזור" },
+];
+const topNames = (results) => {
+  const top = results?.[0]?.votes || 0;
+  return top ? results.filter((r) => r.votes === top).map((r) => r.name) : [];
+};
+function barsHTML(results, icon = "⭐") {
   const max = Math.max(1, ...results.map((r) => r.votes));
   const top = results[0]?.votes || 0;
   return `<div class="bars">${results.map((r) => `
     <div class="bar ${r.votes && r.votes === top ? "lead" : ""}">
-      <div class="top"><span>${r.votes && r.votes === top ? "⭐ " : ""}${esc(r.name)}</span><span>${r.votes}</span></div>
+      <div class="top"><span>${r.votes && r.votes === top ? icon + " " : ""}${esc(r.name)}</span><span>${r.votes}</span></div>
       <div class="track"><div class="fill" style="width:${(r.votes / max) * 100}%"></div></div>
     </div>`).join("")}</div>`;
 }
-function winnersHTML(results) {
-  const top = results[0]?.votes || 0;
-  if (!top) return `<div class="card">אף אחד לא הצביע.</div>`;
-  const names = results.filter((r) => r.votes === top).map((r) => esc(r.name));
-  return `<div class="winner"><div class="big">⭐</div>
-    <div class="name">${names.join(" ו")}</div><div>${names.length > 1 ? "תיקו, " : ""}${top} קולות</div></div>`;
+function winnerHTML(results, cat) {
+  const names = topNames(results).map(esc);
+  if (!names.length) return `<div class="card">${cat.label}: אף אחד לא הצביע.</div>`;
+  return `<div class="winner"><div>${cat.label}</div><div class="big">${cat.icon}</div>
+    <div class="name">${names.join(" ו")}</div><div>${names.length > 1 ? "תיקו, " : ""}${results[0].votes} קולות</div></div>`;
+}
+function allResultsHTML(res, withWinners = true) {
+  return CATS.map((c) => `<div class="cat">
+    ${withWinners ? winnerHTML(res[c.key] || [], c) : ""}
+    <h2>${c.icon} ${c.label}</h2>${barsHTML(res[c.key] || [], c.icon)}</div>`).join("");
 }
 
 /* ================= מצביע ================= */
@@ -164,54 +193,84 @@ async function voterView(id) {
   catch (e) { return page("כוכב המחזור", "אופס", `<div class="msg">${esc(e.message)}</div>`); }
 
   if (game.closed) {
-    return page(game.title, "כוכב המחזור", `${winnersHTML(game.results)}<h2>כל התוצאות</h2>${barsHTML(game.results)}`);
+    const res = Array.isArray(game.results) ? { star: game.results, surprise: [] } : game.results;
+    return page(game.title, "התוצאות", allResultsHTML(res));
   }
 
   const key = "mvp:vote:" + id;
   const saved = LS.get(key, null);
-  if (saved) {
-    page(game.title, "הצבעת!", `
-      <div class="ok">בחרת ב־${esc(saved.candidate)} ככוכב המחזור.</div>
-      <p class="note">אפשר לשנות את הבחירה עד שההצבעה תיסגר. התוצאות יופיעו בקישור הזה אחרי הסגירה.</p>
-      <button class="btn ghost" id="change">שינוי הצבעה</button>`);
-    document.getElementById("change").onclick = () => { LS.del(key); voterPick(game, saved.voter); };
+  if (saved && saved.surprise) {
+    page(game.title, "ההצבעה נשלחה ✓", `
+      <div class="ok">תודה ${esc(saved.voter)}, ההצבעה שלך נקלטה.</div>
+      <div class="card sum" style="margin-top:14px">
+        <div><small>⭐ כוכב המחזור</small><b>${esc(saved.star)}</b></div>
+        <div><small>✨ הפתעת המחזור</small><b>${esc(saved.surprise)}</b></div>
+      </div>
+      <p class="note">אפשר לשנות עד שההצבעה תיסגר. התוצאות יופיעו בקישור הזה אחרי הסגירה.</p>
+      <button class="btn ghost" id="change">שינוי ההצבעה</button>`);
+    document.getElementById("change").onclick = () => voterPick(game, saved.voter, saved, 2);
     return;
   }
   voterPick(game, LS.get("mvp:me:" + id, null));
 }
 
-function voterPick(game, voter) {
-  let candidate = null;
-  const draw = () => {
-    page(game.title, "מי היה כוכב המחזור?", `
-      <h2>מי אתה?</h2>
-      <div class="chips">${game.players.map((p) =>
-        `<button class="chip" data-voter="${esc(p)}" aria-pressed="${p === voter}">${esc(p)}</button>`).join("")}</div>
-      ${voter ? `
-        <h2>הכוכב שלך</h2>
-        <div class="cands">${game.players.filter((p) => p !== voter).map((p) =>
-          `<button class="cand" data-cand="${esc(p)}" aria-pressed="${p === candidate}"><span>${esc(p)}</span><span class="star">⭐</span></button>`).join("")}</div>`
-      : `<p class="note">בחר את השם שלך כדי להמשיך. לא מצביעים לעצמך.</p>`}
-      <div id="err"></div>
-      <div class="dock"><button class="btn" id="send" ${candidate ? "" : "disabled"}>${candidate ? `הצבעה ל־${esc(candidate)}` : "בחרו שחקן"}</button></div>`);
+function voterPick(game, voter, prev = {}, startStep) {
+  const st = { voter: game.players.includes(voter) ? voter : null, star: prev.star || null, surprise: prev.surprise || null };
+  let step = startStep || (st.voter ? 2 : 1);
 
-    app.querySelectorAll("[data-voter]").forEach((b) => b.onclick = () => {
-      voter = b.dataset.voter; candidate = null; LS.set("mvp:me:" + game.id, voter); draw();
-    });
-    app.querySelectorAll("[data-cand]").forEach((b) => b.onclick = () => {
-      candidate = b.dataset.cand;
-      app.querySelectorAll("[data-cand]").forEach((x) => x.setAttribute("aria-pressed", x === b));
-      const s = document.getElementById("send"); s.disabled = false; s.textContent = `הצבעה ל־${candidate}`;
-    });
+  const progress = () => `<div class="progress" aria-label="שלב ${step} מתוך 4">${[1, 2, 3, 4].map((n) => `<i class="${n <= step ? "on" : ""}"></i>`).join("")}</div>`;
+  const who = () => `<div class="who"><span>מצביע בשם: ${esc(st.voter)}</span><button data-me>לא אתה? החלפה</button></div>`;
+  const cands = (field, icon) => `<div class="cands">${game.players.filter((p) => p !== st.voter).map((p) =>
+    `<button class="cand" data-pick="${esc(p)}" aria-pressed="${p === st[field]}"><span>${esc(p)}</span><span class="ico">${icon}</span></button>`).join("")}</div>`;
+  const back = () => { step = Math.max(1, step - 1); draw(); };
+
+  const draw = () => {
+    if (step === 1) {
+      page(game.title, "שלב 1: מה השם שלך?", `${progress()}
+        <p class="lead">בחר את <u>השם שלך</u>, כדי שנדע מי מצביע. את הכוכב בוחרים בשלב הבא.</p>
+        <div class="chips big">${game.players.map((p) =>
+          `<button class="chip" data-voter="${esc(p)}" aria-pressed="${p === st.voter}">${esc(p)}</button>`).join("")}</div>`);
+      app.querySelectorAll("[data-voter]").forEach((b) => b.onclick = () => {
+        const v = b.dataset.voter;
+        if (v !== st.voter) { if (st.star === v) st.star = null; if (st.surprise === v) st.surprise = null; }
+        st.voter = v; LS.set("mvp:me:" + game.id, v); step = 2; draw();
+      });
+      return;
+    }
+    if (step === 2 || step === 3) {
+      const isStar = step === 2;
+      const field = isStar ? "star" : "surprise";
+      page(game.title, isStar ? "שלב 2: מי כוכב המחזור?" : "שלב 3: מי הפתעת המחזור?", `${progress()}${who()}
+        <p class="lead">${isStar ? "מי היה השחקן הכי טוב במשחק?"
+          : "מי הפתיע ושיחק הרבה מעל הרמה הרגילה שלו? מותר לבחור גם את מי שבחרת ככוכב."}</p>
+        ${cands(field, isStar ? "⭐" : "✨")}`, { back });
+      app.querySelector("[data-me]").onclick = () => { step = 1; draw(); };
+      app.querySelectorAll("[data-pick]").forEach((b) => b.onclick = () => {
+        st[field] = b.dataset.pick;
+        app.querySelectorAll("[data-pick]").forEach((x) => x.setAttribute("aria-pressed", x === b));
+        setTimeout(() => { step = step + 1; draw(); }, 250);
+      });
+      return;
+    }
+    page(game.title, "שלב 4: שליחת ההצבעה", `${progress()}
+      <div class="warn">ההצבעה עוד לא נשלחה. לחצו על הכפתור הירוק כדי לשלוח.</div>
+      <div class="card sum">
+        <div class="line"><div><small>מצביע</small><b>${esc(st.voter)}</b></div><button data-go="1">שינוי</button></div>
+        <div class="line"><div><small>⭐ כוכב המחזור</small><b>${esc(st.star)}</b></div><button data-go="2">שינוי</button></div>
+        <div class="line"><div><small>✨ הפתעת המחזור</small><b>${esc(st.surprise)}</b></div><button data-go="3">שינוי</button></div>
+      </div>
+      <button class="btn send" id="send">✓ שליחת ההצבעה</button>
+      <div id="err"></div>`, { back });
+    app.querySelectorAll("[data-go]").forEach((b) => b.onclick = () => { step = +b.dataset.go; draw(); });
     document.getElementById("send").onclick = async (ev) => {
-      ev.target.disabled = true;
+      ev.target.disabled = true; ev.target.textContent = "שולח…";
       try {
-        await api(`games/${game.id}/vote`, { method: "POST", body: { voter, candidate } });
-        LS.set("mvp:vote:" + game.id, { voter, candidate });
+        await api(`games/${game.id}/vote`, { method: "POST", body: st });
+        LS.set("mvp:vote:" + game.id, { ...st });
         voterView(game.id);
       } catch (e) {
         document.getElementById("err").innerHTML = `<div class="msg" style="margin-top:14px">${esc(e.message)}</div>`;
-        ev.target.disabled = false;
+        ev.target.disabled = false; ev.target.textContent = "✓ שליחת ההצבעה";
       }
     };
   };
@@ -329,10 +388,10 @@ async function manageView(id, fresh) {
           <a class="btn wa" href="${waHref(inviteText(g))}" target="_blank" rel="noopener">שליחה בוואטסאפ</a>
           <button class="btn ghost" id="copy">העתקת הקישור</button>
         </div>
-      </div>` : winnersHTML(g.results)}
+      </div>` : ""}
 
     <h2>תוצאות <span class="count">${g.total} מתוך ${g.players.length} הצביעו</span></h2>
-    ${barsHTML(g.results)}
+    ${allResultsHTML(g, g.closed)}
 
     ${missing.length && !g.closed ? `
       <h2>עוד לא הצביעו</h2>
@@ -341,8 +400,8 @@ async function manageView(id, fresh) {
 
     <h2>ניהול</h2>
     <div class="stack">
-      <button class="btn ${g.closed ? "ghost" : ""}" id="toggle">${g.closed ? "פתיחה מחדש של ההצבעה" : "סגירת ההצבעה והצגת הזוכה"}</button>
-      ${g.closed ? `<a class="btn wa" href="${waHref(`⭐ כוכב המחזור (${g.title}): ${g.results.filter((r) => r.votes && r.votes === g.results[0].votes).map((r) => r.name).join(" ו") || "אין קולות"}!\nכל התוצאות: ${voteLink(g.id)}`)}" target="_blank" rel="noopener">שליחת הזוכה לקבוצה</a>` : ""}
+      <button class="btn ${g.closed ? "ghost" : ""}" id="toggle">${g.closed ? "פתיחה מחדש של ההצבעה" : "סגירת ההצבעה והצגת הזוכים"}</button>
+      ${g.closed ? `<a class="btn wa" href="${waHref(`🏆 תוצאות ${g.title}\n⭐ כוכב המחזור: ${topNames(g.star).join(" ו") || "אין קולות"}\n✨ הפתעת המחזור: ${topNames(g.surprise).join(" ו") || "אין קולות"}\nכל התוצאות: ${voteLink(g.id)}`)}" target="_blank" rel="noopener">שליחת הזוכים לקבוצה</a>` : ""}
       <button class="btn danger" id="del">מחיקת ההצבעה</button>
     </div>`, { back: homeView });
 
@@ -350,7 +409,7 @@ async function manageView(id, fresh) {
     try { await navigator.clipboard.writeText(voteLink(g.id)); toast("הקישור הועתק"); } catch { toast("לא הצלחתי להעתיק. סמנו את הקישור ידנית."); }
   });
   document.getElementById("toggle").onclick = async (ev) => {
-    if (!g.closed && !confirm("לסגור את ההצבעה? מי שלא הצביע לא יוכל להצביע, והזוכה יוצג לכולם.")) return;
+    if (!g.closed && !confirm("לסגור את ההצבעה? מי שלא הצביע לא יוכל להצביע, והזוכים יוצגו לכולם.")) return;
     ev.target.disabled = true;
     try { await api(`games/${id}/status`, { method: "POST", admin: true, body: { closed: !g.closed } }); manageView(id); }
     catch (e) { toast(e.message); ev.target.disabled = false; }
