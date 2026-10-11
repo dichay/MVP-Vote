@@ -16,13 +16,21 @@ function isAdmin(req) {
   return Boolean(key) && req.headers.get("x-admin-key") === key;
 }
 
+const CATS = ["star", "surprise"];
+
 async function tally(store, game) {
   const { blobs } = await store.list({ prefix: `votes/${game.id}/` });
   const votes = (await Promise.all(blobs.map((b) => store.get(b.key, { type: "json" })))).filter(Boolean);
-  const counts = new Map(game.players.map((p) => [p, 0]));
-  for (const v of votes) if (counts.has(v.candidate)) counts.set(v.candidate, counts.get(v.candidate) + 1);
-  const results = [...counts].map(([name, votes]) => ({ name, votes })).sort((a, b) => b.votes - a.votes);
-  return { results, voted: votes.map((v) => v.voter), total: votes.length };
+  const out = { voted: votes.map((v) => v.voter), total: votes.length };
+  for (const cat of CATS) {
+    const counts = new Map(game.players.map((p) => [p, 0]));
+    for (const v of votes) {
+      const pick = cat === "star" ? v.star ?? v.candidate : v.surprise; // תאימות לקולות ישנים
+      if (counts.has(pick)) counts.set(pick, counts.get(pick) + 1);
+    }
+    out[cat] = [...counts].map(([name, votes]) => ({ name, votes })).sort((a, b) => b.votes - a.votes);
+  }
+  return out;
 }
 
 export default async (req) => {
@@ -67,7 +75,10 @@ export default async (req) => {
     // --- צפייה ציבורית
     if (!action && method === "GET") {
       const pub = { id: game.id, title: game.title, players: game.players, closed: game.closed };
-      if (game.closed) pub.results = (await tally(store, game)).results;
+      if (game.closed) {
+        const t = await tally(store, game);
+        pub.results = { star: t.star, surprise: t.surprise };
+      }
       return json(pub);
     }
 
@@ -76,11 +87,13 @@ export default async (req) => {
       if (game.closed) return json({ error: "ההצבעה כבר נסגרה" }, 409);
       const body = await req.json().catch(() => ({}));
       const voter = clean(body.voter);
-      const candidate = clean(body.candidate);
+      const star = clean(body.star);
+      const surprise = clean(body.surprise);
       const vi = game.players.indexOf(voter);
-      if (vi < 0 || !game.players.includes(candidate)) return json({ error: "שחקן לא מוכר" }, 400);
-      if (voter === candidate) return json({ error: "אי אפשר להצביע לעצמך" }, 400);
-      await store.setJSON(`votes/${id}/${vi}`, { voter, candidate, at: Date.now() });
+      if (vi < 0 || !game.players.includes(star) || !game.players.includes(surprise))
+        return json({ error: "צריך לבחור שם, כוכב והפתעה מתוך רשימת השחקנים" }, 400);
+      if (voter === star || voter === surprise) return json({ error: "אי אפשר להצביע לעצמך" }, 400);
+      await store.setJSON(`votes/${id}/${vi}`, { voter, star, surprise, at: Date.now() });
       return json({ ok: true });
     }
 
